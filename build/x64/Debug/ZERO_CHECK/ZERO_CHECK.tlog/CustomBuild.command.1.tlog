@@ -1,0 +1,10 @@
+^C:\USERS\DOM12\DESKTOP\PASSWORDMANAGER\BUILD\CMAKEFILES\EFF613CBAF14237E635F7B1B56450710\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/dom12/Desktop/PasswordManager -BC:/Users/dom12/Desktop/PasswordManager/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/dom12/Desktop/PasswordManager/build/PasswordManagerCPP.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,4 @@
+C:/Users/dom12/Desktop/PasswordManager/build/CMakeFiles/PasswordManager.dir
+C:/Users/dom12/Desktop/PasswordManager/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/dom12/Desktop/PasswordManager/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/dom12/Desktop/PasswordManager/build/_deps/json-build/CMakeFiles/ALL_BUILD.dir

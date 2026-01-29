@@ -1,0 +1,10 @@
+^C:\USERS\DOM12\DESKTOP\PASSWORDMANAGER\BUILD\_DEPS\SQLITE3-SUBBUILD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/dom12/Desktop/PasswordManager/build/_deps/sqlite3-subbuild -BC:/Users/dom12/Desktop/PasswordManager/build/_deps/sqlite3-subbuild --check-stamp-file C:/Users/dom12/Desktop/PasswordManager/build/_deps/sqlite3-subbuild/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
