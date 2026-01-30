@@ -14,7 +14,16 @@
 
 int main() {
 	std::cout << "Paswword manager -- Without GUI, next time i'll sit on this and learn Cpp Gui" << std::endl;
-	nlohmann::json j;
+	std::ifstream in("output.json");
+	nlohmann::json j = in ? nlohmann::json::parse(in) : nlohmann::json::array();
+	std::vector<User> users;
+	if (in) {
+		std::cout << "wykonuje sie";
+		 users = j.get<std::vector<User>>();
+		for (const auto& u : users) {
+			std::cout << u.name << " " << "\n";
+		}
+	}
 	{
 		std::unique_ptr<User> user = std::make_unique<User>();
 		std::cout << "1. Log in" << std::endl;
@@ -27,41 +36,53 @@ int main() {
 		{
 			std::unique_ptr<std::string> pass = std::make_unique<std::string>();
 			switch (n) {
-			case 1:
+			case 1: {
 
 				std::cout << "User name: " << std::endl;
 				std::getline(std::cin, (user->name));
 				std::cout << "Password: " << std::endl;
 				std::getline(std::cin, (*pass));
+				auto it = std::find_if(users.begin(), users.end(), [&](User a) {
+					return a.name == user->name;
+					});
+				if (it != users.end()) {
+					std::cout << "Find him!" << std::endl;
+
+					std::cout <<"Hash: "<< (it->pwhash).c_str() <<" haslo: " <<(*pass).c_str() <<" dlugosc "<< strlen((*pass).c_str()) << " Prawdziwosc "<< crypto_pwhash_str_verify(
+						(it->pwhash).c_str(),
+						(*pass).c_str(), strlen((*pass).c_str()));
+
+					if (crypto_pwhash_str_verify(
+						(it->pwhash).c_str(),
+						(*pass).c_str(), strlen((*pass).c_str())
+					) == 1) {
+						std::cout << "Dobre haslo" << std::endl;
+					}
+				}
+
 				break;
+			}
 			case 2:
 				std::cout << "User name: " << std::endl;
 				std::getline(std::cin, (user->name));
 				std::cout << "Password: " << std::endl;
 				std::getline(std::cin, (*pass));
 				std::cout << "Your email address: " << std::endl;
-				std::getline(std::cin, (user->name));
-				unsigned char salt[crypto_pwhash_SALTBYTES];//crypto_pwhash_SALTBYTES const from libsoduim tells us how many bytes supose have salt 
-				// in practice salt[0] - 1st byte salt[1] - 2nd byte...
-				randombytes_buf(salt, sizeof salt);
-				unsigned char pwhash[32];
+				std::getline(std::cin, (user->email));
+			    char pwhash[crypto_pwhash_STRBYTES];
 
-				crypto_pwhash(
+				crypto_pwhash_str(
 					pwhash,
-					sizeof pwhash,
 					pass->c_str(),
 					pass->size(),
-					salt,
 					crypto_pwhash_OPSLIMIT_MODERATE,
-					crypto_pwhash_MEMLIMIT_MODERATE,
-					crypto_pwhash_ALG_ARGON2ID13
+					crypto_pwhash_MEMLIMIT_MODERATE
 				);
 				std::cout << pwhash<<std::endl;
-				memcpy(user->pwhash, pwhash, 32);
+				//memcpy((user->pwhash).c_str(), pwhash, crypto_pwhash_STRBYTES);
+				user->pwhash = pwhash;
 				std::cout << *pass;
-				j["user"] = user->name;
-				j["kod"] = user->pwhash;
-				j["e-mail"] = user->email;
+				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} });
 
 				break;
 			case 3:
@@ -77,7 +98,7 @@ int main() {
 
 
 			}
-			std::ofstream file("output.json", std::ios::out | std::ios::trunc);
+			std::ofstream file("output.json");
 			if (file.is_open()) {
 				file << j.dump(4); 
 				file.close();
