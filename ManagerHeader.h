@@ -10,6 +10,7 @@ struct User {
 	std::string name;
 	std::string pwhash;
 	std::string email;
+	int ID;
 	int iloscHasel;
 };
 struct UserPasswords {
