@@ -14,9 +14,9 @@ struct User {
 	//int iloscHasel;
 };
 struct UserPasswords {
+	std::string site;
 	std::string name;
 	std::string pass;
-	std::string site;
 };
 
 

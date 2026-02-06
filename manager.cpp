@@ -65,6 +65,8 @@ int main() {
 
 					}
 				}
+				*user = *it;
+
 				std::cout << std::endl;;
 
 				break;
@@ -155,37 +157,48 @@ int main() {
 		std::ifstream in2(name +".json");
 		nlohmann::json pass = in2 ? nlohmann::json::parse(in2) : nlohmann::json::array();
 		std::vector<UserPasswords> passwords;
-		if (pass)
+		if (in2)
 			passwords = pass.get<std::vector<UserPasswords>>();
+		for (const auto& i : passwords) {
+			std::cout << i.name << " " << i.pass << " " << i.site << std::endl;
+		}
 		while (1) {
 			std::unique_ptr<UserPasswords> userPass = std::make_unique<UserPasswords>();
-			std::cout << "1. User name:"	  << std::endl;
-			std::getline(std::cin, userPass->name);
-			std::cout << "2. Site name:"  << std::endl;
-			std::getline(std::cin, userPass->site);
-			std::cout << "3. Password" << std::endl;
-			std::cout << "	a) Write password" << std::endl;
-			std::cout << "	b) Generate password (recommended)" << std::endl;
-			char b;
-			std::cin >> b;
-			while (1) {
-				if (b == 'a') {
-					std::cout << "Write password: \n";
-					std::getline(std::cin, userPass->pass);
-				}
-				else if (b == 'b') {
-					userPass->pass = "NEWPASSWORD!";
-				}
-				else { std::cout << " You chose wrong, choose between a or b" << std::endl; }
-			}
+			std::cout << "1. Add password" << std::endl;
+			std::cout << "2. Password list" << std::endl;
+			std::cout << "3. Change password" << std::endl;
+			std::cout << "4. Delete password" << std::endl;
 			int n;
 			std::cin >> n;
+			std::cout << std::endl;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
 			switch (n) {
 			case 1:
-				std::cout << "1. Name: " << std::endl;
-				std::getline(std::cin, (user->name));
-				std::cout << "2. Password: " << std::endl;
-				std::cout << "3. Site name: " << std::endl;
+				std::cout << "1. User name:" << std::endl;
+				std::getline(std::cin, userPass->name);
+				std::cout << "2. Site name:" << std::endl;
+				std::getline(std::cin, userPass->site);
+				std::cout << "3. Password" << std::endl;
+				std::cout << "a) Write password" << std::endl;
+				std::cout << "b) Generate password (recommended)" << std::endl;
+				char b;
+				std::cin >> b;
+				while (1) {
+					if (b == 'a') {
+						std::cout << "Write password: \n";
+						std::getline(std::cin, userPass->pass);
+						break;
+					}
+					else if (b == 'b') {
+						userPass->pass = "NEWPASSWORD!";
+						break;
+					}
+					else { std::cout << " You chose wrong, choose between a or b" << std::endl; }
+				}
+				passwords.push_back(*userPass);
+				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} });
+
 				break;
 			case 2:
 				break;
@@ -196,6 +209,11 @@ int main() {
 			
 			
 			
+			}
+			std::ofstream file(name+".json");
+			if (file.is_open()) {
+				file << pass.dump(4);
+				file.close();
 			}
 		
 		
