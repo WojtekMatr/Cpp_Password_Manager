@@ -8,7 +8,9 @@
 #include <ostream>
 #include <fstream>
 #include <random>
-
+#include <algorithm>
+#include <limits>
+#include <cstring>
 
 
 
@@ -22,7 +24,6 @@ int main() {
 	auto it = users.begin();
 
 	if (in) {
-		std::cout << "wykonuje sie";
 		 users = j.get<std::vector<User>>();
 		for (const auto& u : users) {
 			std::cout << u.name << " " << "\n";
@@ -68,17 +69,20 @@ int main() {
 
 				break;
 			}
-			case 2:
+			case 2:{
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> dist(1, 250000);
 
 				std::cout << "User name: " << std::endl;
 				std::getline(std::cin, (user->name));
-				 it = std::find_if(users.begin(), users.end(), [&](User a) {
+				it = std::find_if(users.begin(), users.end(), [&](User a) {
 					return a.name == user->name;
 					});
 				if (it != users.end()) {
 					printf("There is User with this name");
 					break;
-				
+
 				}
 				std::cout << "Password: " << std::endl;
 				std::getline(std::cin, (*pass));
@@ -97,15 +101,25 @@ int main() {
 				//memcpy((user->pwhash).c_str(), pwhash, crypto_pwhash_STRBYTES);
 				user->pwhash = pwhash;
 				std::cout << *pass;
-				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} });
+				int ID;
+				while (1) {
+					ID = dist(gen);
+					it = std::find_if(users.begin(), users.end(), [&](User a) {
+						return a.ID == ID;
+						});
+					if (it == users.end()) { break; }
+				}
+				user->ID = ID;
+				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} , {"ID", ID} });
 				users.push_back(*user);
-				std::cout << "\n"<< std::endl;;
+				std::cout << "\n" << std::endl;;
 				break;
+			}
 			case 3:
 				std::cout << "Reseting password!" << std::endl;
 				std::cout << "User name\n";
 				std::getline(std::cin, (user->name));
-				std::cout << """Email\n";
+				std::cout << "Email\n";
 				std::getline(std::cin, (user->email));
 				 it = std::find_if(users.begin(), users.end(), [&](User a) {
 					return a.name == user->name && a.email == user->email;
@@ -134,14 +148,65 @@ int main() {
 				file.close();
 			}
 
+
+
 		}
-
-
-
-
-
-
-
+		std::string name = std::to_string(user->ID);
+		std::ifstream in2(name +".json");
+		nlohmann::json pass = in2 ? nlohmann::json::parse(in2) : nlohmann::json::array();
+		std::vector<UserPasswords> passwords;
+		if (pass)
+			passwords = pass.get<std::vector<UserPasswords>>();
+		while (1) {
+			std::unique_ptr<UserPasswords> userPass = std::make_unique<UserPasswords>();
+			std::cout << "1. User name:"	  << std::endl;
+			std::getline(std::cin, userPass->name);
+			std::cout << "2. Site name:"  << std::endl;
+			std::getline(std::cin, userPass->site);
+			std::cout << "3. Password" << std::endl;
+			std::cout << "	a) Write password" << std::endl;
+			std::cout << "	b) Generate password (recommended)" << std::endl;
+			char b;
+			std::cin >> b;
+			while (1) {
+				if (b == 'a') {
+					std::cout << "Write password: \n";
+					std::getline(std::cin, userPass->pass);
+				}
+				else if (b == 'b') {
+					userPass->pass = "NEWPASSWORD!";
+				}
+				else { std::cout << " You chose wrong, choose between a or b" << std::endl; }
+			}
+			int n;
+			std::cin >> n;
+			switch (n) {
+			case 1:
+				std::cout << "1. Name: " << std::endl;
+				std::getline(std::cin, (user->name));
+				std::cout << "2. Password: " << std::endl;
+				std::cout << "3. Site name: " << std::endl;
+				break;
+			case 2:
+				break;
+			case 3:
+				break;
+			case 4:
+				break;
+			
+			
+			
+			}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		}
 
 
 
