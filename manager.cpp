@@ -215,6 +215,7 @@ int main() {
 				if (sodium_init() < 0) return 1;
 				unsigned char key1[crypto_secretbox_KEYBYTES];
 				randombytes_buf(key1, sizeof key1);
+				randombytes_buf(salt, sizeof salt);
 				randombytes_buf(nonce, sizeof nonce);
 				unsigned char ciphertext[1024];
 				size_t msg_len = pass1.size();
@@ -247,10 +248,10 @@ int main() {
 
 				//strcpy(userPass->pass, ciphertext);
 				passwords.push_back(*userPass);
-				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} });
+				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} , {"salt", salt}, {"nonce", nonce}});
 
 				std::cout << "\n";
-
+				sizePass++;
 				break;
 			}
 			case 2: {
