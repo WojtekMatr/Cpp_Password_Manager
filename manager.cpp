@@ -11,12 +11,13 @@
 #include <algorithm>
 #include <limits>
 #include <cstring>
+//#include <bcrypt.h>
 
 
 
 
 int main() {
-	std::cout << "Paswword manager -- Without GUI, next time i'll sit on this and learn Cpp Gui" << std::endl;
+	std::cout << "\aPaswword manager -- Without GUI, next time i'll sit on this and learn Cpp Gui" << std::endl;
 	std::ifstream in("output.json");
 	nlohmann::json j = in ? nlohmann::json::parse(in) : nlohmann::json::array();
 	std::vector<User> users;
@@ -172,9 +173,11 @@ int main() {
 			std::cin >> n;
 			std::cout << std::endl;
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			std::string pass1;
+			const char* message;
 
 			switch (n) {
-			case 1:
+			case 1: {
 				std::cout << "1. User name:" << std::endl;
 				std::getline(std::cin, userPass->name);
 				std::cout << "2. Site name:" << std::endl;
@@ -184,27 +187,76 @@ int main() {
 				std::cout << "b) Generate password (recommended)" << std::endl;
 				char b;
 				std::cin >> b;
+
 				while (1) {
 					if (b == 'a') {
 						std::cout << "Write password: \n";
-						std::getline(std::cin, userPass->pass);
+						std::getline(std::cin, pass1);
 						break;
 					}
 					else if (b == 'b') {
-						userPass->pass = "NEWPASSWORD!";
+						std::random_device rd1;
+						std::mt19937 gen(rd1());
+						std::uniform_int_distribution<> dist(32, 255);
+						for (int i = 0; i < 15; i++) {
+							pass1.push_back(dist(gen));
+						}
+						//userPass->pass = pass1;
 						break;
 					}
-					else { std::cout << " You chose wrong, choose between a or b" << std::endl; }
+					else { std::cout << " You choose wrong, choose between a or b" << std::endl; }
 				}
+				if (sodium_init() < 0) return 1;
+				unsigned char key1[crypto_secretbox_KEYBYTES];
+				randombytes_buf(key1, sizeof key1);
+				unsigned char nonce[crypto_secretbox_NONCEBYTES];
+				randombytes_buf(nonce, sizeof nonce);
+				unsigned char ciphertext[1024];
+				size_t msg_len = pass1.size();
+				crypto_secretbox_easy(ciphertext,
+					reinterpret_cast<const unsigned char*>(pass1.c_str()),
+					msg_len,
+					nonce,
+					key1);
+
+				message = pass1.c_str();
+				char encoded[2048];
+				sodium_bin2base64(
+					encoded,
+					sizeof encoded,
+					ciphertext,
+					crypto_secretbox_MACBYTES + msg_len,
+					sodium_base64_VARIANT_ORIGINAL
+				);
+
+
+				//memcpy(userPass->pass, encoded, sizeof(encoded));
+				userPass->pass = encoded;
+
+
+				//crypto_secretbox_easy(ciphertext, (const unsigned char*)message, strlen(message), nonce,key1);
+				//size_t cipher_len = strlen(pass1.c_str()) + crypto_secretbox_MACBYTES;
+				//memcpy(userPass->pass, ciphertext, sizeof(ciphertext));
+
+				std::cout << encoded;
+
+				//strcpy(userPass->pass, ciphertext);
 				passwords.push_back(*userPass);
 				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} });
 
+
+
 				break;
+			}
 			case 2:
+				printf("1");
 				break;
 			case 3:
+				printf("1");
 				break;
+
 			case 4:
+				printf("1");
 				break;
 			
 			
