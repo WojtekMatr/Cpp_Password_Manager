@@ -27,6 +27,16 @@ class JsonPasswords {
 public:
 
 };
+
+int count(const std::vector<UserPasswords>& name) {
+	int size=0;
+	for (auto i : name) {
+		size++;
+	}
+
+	return size;
+};
+
 //overloading json's methods for our objects:
 
 void to_json(nlohmann::json& j, const User& u) {

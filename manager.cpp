@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <sodium.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <memory>
@@ -22,6 +23,9 @@ int main() {
 	nlohmann::json j = in ? nlohmann::json::parse(in) : nlohmann::json::array();
 	std::vector<User> users;
 	bool logged = false;
+	unsigned char out_key[crypto_secretbox_KEYBYTES];
+	unsigned char salt[crypto_pwhash_SALTBYTES];
+	unsigned char nonce[crypto_secretbox_NONCEBYTES];
 	auto it = users.begin();
 
 	if (in) {
@@ -100,6 +104,10 @@ int main() {
 					crypto_pwhash_OPSLIMIT_MODERATE,
 					crypto_pwhash_MEMLIMIT_MODERATE
 				);
+
+				//crypto_pwhash(
+
+				//);
 				std::cout << pwhash << std::endl;
 				//memcpy((user->pwhash).c_str(), pwhash, crypto_pwhash_STRBYTES);
 				user->pwhash = pwhash;
@@ -160,9 +168,7 @@ int main() {
 		std::vector<UserPasswords> passwords;
 		if (in2)
 			passwords = pass.get<std::vector<UserPasswords>>();
-		for (const auto& i : passwords) {
-			std::cout << i.name << " " << i.pass << " " << i.site << std::endl;
-		}
+		int sizePass = count(passwords);
 		while (1) {
 			std::unique_ptr<UserPasswords> userPass = std::make_unique<UserPasswords>();
 			std::cout << "1. Add password" << std::endl;
@@ -209,7 +215,6 @@ int main() {
 				if (sodium_init() < 0) return 1;
 				unsigned char key1[crypto_secretbox_KEYBYTES];
 				randombytes_buf(key1, sizeof key1);
-				unsigned char nonce[crypto_secretbox_NONCEBYTES];
 				randombytes_buf(nonce, sizeof nonce);
 				unsigned char ciphertext[1024];
 				size_t msg_len = pass1.size();
@@ -244,13 +249,67 @@ int main() {
 				passwords.push_back(*userPass);
 				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} });
 
-
+				std::cout << "\n";
 
 				break;
 			}
-			case 2:
-				printf("1");
-				break;
+			case 2: {
+				int m=-1;
+				while (1) {
+					int countPasswords = 0;
+					for (const auto& i : passwords) {
+						countPasswords++;
+						if (m == 0) {
+							std::cout << std::left << std::setw(15)<< i.name << std::setw(45) << i.pass << std::setw(45) << i.site << std::endl;
+						}
+						else {
+							if (m == countPasswords) {
+								std::string uncodedPassword;
+								char encoded[2048];
+								unsigned char cipher[1024];
+								unsigned char decrypted[1024];
+
+								sodium_base642bin(cipher, sizeof cipher, i.pass.c_str(), i.pass.length(), NULL,NULL,NULL, sodium_base64_VARIANT_ORIGINAL);
+								//std::cout << bufor;
+
+								//crypto_secretbox_open_easy(decrypted, cipher, sizeof cipher, )
+								
+								
+								
+								std::cout << std::left<< std::setw(15)<<  i.name << std::setw(45) << i.pass << std::setw(45) << i.site << std::endl;
+							}
+							else {
+								std::string hiddenPassword;
+								for (int b = 0; b < sizeof i.pass; b++) {
+									hiddenPassword += '*';
+								}
+								std::cout << std::left << std::setw(15)<< i.name << std::setw(45) << hiddenPassword << std::setw(45) << i.site << std::endl;
+							}
+							}
+						}
+
+				
+
+					std::cout << "\n\n Ktore haslo chcesz pokazac, napisz numer indeksu:" << std::endl;
+					std::cout << "\n Jesli chcesz pokazac wszystkie (niezalecane) kliknij 0\n" << std::endl;
+						
+					while (1) {
+						std::cin >> m;
+						if (m > sizePass || m < 0) {
+							std::cout << "Podano zla liczbe\n";
+						}
+						else {
+							break;
+						}
+					}
+
+
+
+
+				}
+					break;
+				
+			}
 			case 3:
 				printf("1");
 				break;
