@@ -44,7 +44,7 @@ int count(const std::vector<UserPasswords>& name) {
 
 void to_json(nlohmann::json& j, const User& u) {
 	j = nlohmann::json{
-		{"user", u.name},
+		{"user",  u.name},
 		{"email", u.email},
 		{"code", u.pwhash},
 		{"salt", u.salt},
