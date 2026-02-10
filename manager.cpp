@@ -66,11 +66,17 @@ int main() {
 						(*pass).c_str(), strlen((*pass).c_str())
 					) == 0) {
 						std::cout << "Good password!" << std::endl;
+						*user = *it;
 						logged = true;
-
+						crypto_pwhash(
+							out_key, sizeof out_key, (*pass).c_str(), strlen((*pass).c_str()),
+							user->salt, crypto_pwhash_OPSLIMIT_INTERACTIVE,
+							crypto_pwhash_MEMLIMIT_INTERACTIVE,
+							crypto_pwhash_ALG_DEFAULT);
+						
+						std::cout << out_key;
 					}
 				}
-				*user = *it;
 
 				std::cout << std::endl;;
 
@@ -80,7 +86,7 @@ int main() {
 				std::random_device rd;
 				std::mt19937 gen(rd());
 				std::uniform_int_distribution<> dist(1, 250000);
-
+				randombytes_buf(salt, sizeof salt);
 				std::cout << "User name: " << std::endl;
 				std::getline(std::cin, (user->name));
 				it = std::find_if(users.begin(), users.end(), [&](User a) {
@@ -121,8 +127,9 @@ int main() {
 					if (it == users.end()) { break; }
 				}
 				user->ID = ID;
-				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} , {"ID", ID} });
+				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} ,{"salt", salt}, { "ID", ID }});
 				users.push_back(*user);
+				//crypto_pwhash(out_key,);
 				std::cout << "\n" << std::endl;;
 				break;
 			}
@@ -192,9 +199,12 @@ int main() {
 				std::cout << "a) Write password" << std::endl;
 				std::cout << "b) Generate password (recommended)" << std::endl;
 				char b;
-				std::cin >> b;
+				
+				//std::cin >> b;
 
 				while (1) {
+					std::cin >> b;
+					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 					if (b == 'a') {
 						std::cout << "Write password: \n";
 						std::getline(std::cin, pass1);
@@ -203,7 +213,7 @@ int main() {
 					else if (b == 'b') {
 						std::random_device rd1;
 						std::mt19937 gen(rd1());
-						std::uniform_int_distribution<> dist(32, 255);
+						std::uniform_int_distribution<> dist(33, 126);
 						for (int i = 0; i < 15; i++) {
 							pass1.push_back(dist(gen));
 						}
@@ -213,19 +223,18 @@ int main() {
 					else { std::cout << " You choose wrong, choose between a or b" << std::endl; }
 				}
 				if (sodium_init() < 0) return 1;
-				unsigned char key1[crypto_secretbox_KEYBYTES];
-				randombytes_buf(key1, sizeof key1);
-				randombytes_buf(salt, sizeof salt);
 				randombytes_buf(nonce, sizeof nonce);
 				unsigned char ciphertext[1024];
 				size_t msg_len = pass1.size();
-				crypto_secretbox_easy(ciphertext,
+				crypto_secretbox_easy(
+					ciphertext,
 					reinterpret_cast<const unsigned char*>(pass1.c_str()),
 					msg_len,
 					nonce,
-					key1);
+					out_key // KLUCZ
+				);
 
-				message = pass1.c_str();
+
 				char encoded[2048];
 				sodium_bin2base64(
 					encoded,
@@ -248,7 +257,7 @@ int main() {
 
 				//strcpy(userPass->pass, ciphertext);
 				passwords.push_back(*userPass);
-				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} , {"salt", salt}, {"nonce", nonce}});
+				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} , {"nonce", nonce}});
 
 				std::cout << "\n";
 				sizePass++;
@@ -267,17 +276,22 @@ int main() {
 							if (m == countPasswords) {
 								std::string uncodedPassword;
 								char encoded[2048];
+								size_t cipher_len;
 								unsigned char cipher[1024];
 								unsigned char decrypted[1024];
 
-								sodium_base642bin(cipher, sizeof cipher, i.pass.c_str(), i.pass.length(), NULL,NULL,NULL, sodium_base64_VARIANT_ORIGINAL);
+								sodium_base642bin(cipher, sizeof cipher, i.pass.c_str(), i.pass.length(), NULL,&cipher_len,NULL, sodium_base64_VARIANT_ORIGINAL);
 								//std::cout << bufor;
+								const unsigned char* data =
+									reinterpret_cast<const unsigned char*>(i.pass.c_str());
 
-								//crypto_secretbox_open_easy(decrypted, cipher, sizeof cipher, )
+								crypto_secretbox_open_easy(decrypted, 
+									cipher,cipher_len, i.nonce, out_key);
 								
 								
-								
-								std::cout << std::left<< std::setw(15)<<  i.name << std::setw(45) << i.pass << std::setw(45) << i.site << std::endl;
+								size_t message_len = cipher_len - crypto_secretbox_MACBYTES;
+								decrypted[message_len] = '\0';
+								std::cout << std::left<< std::setw(15)<<  i.name << std::setw(45) << decrypted << std::setw(45) << i.site << std::endl;
 							}
 							else {
 								std::string hiddenPassword;

@@ -10,6 +10,7 @@ struct User {
 	std::string name;
 	std::string pwhash;
 	std::string email;
+	unsigned char salt[crypto_pwhash_SALTBYTES];
 	int ID;
 	//int iloscHasel;
 };
@@ -17,7 +18,6 @@ struct UserPasswords {
 	std::string site;
 	std::string name;
 	std::string pass;
-	unsigned char salt[crypto_pwhash_SALTBYTES];
 	unsigned char nonce[crypto_secretbox_NONCEBYTES];
 
 };
@@ -47,6 +47,7 @@ void to_json(nlohmann::json& j, const User& u) {
 		{"user", u.name},
 		{"email", u.email},
 		{"code", u.pwhash},
+		{"salt", u.salt},
 		{"ID", u.ID}
 	};
 }
@@ -56,7 +57,9 @@ void from_json(const nlohmann::json& j, User& u) {
 	j.at("user").get_to(u.name);
 	j.at("email").get_to(u.email);
 	j.at("code").get_to(u.pwhash);
+	j.at("salt").get_to(u.salt);
 	j.at("ID").get_to(u.ID);
+
 }
 
 
@@ -65,7 +68,6 @@ void to_json(nlohmann::json& j, const UserPasswords& p) {
 		{"site", p.site},
 		{"name", p.name},
 		{"pass", p.pass},
-		{"salt", p.salt},
 		{"nonce", p.nonce}
 	};
 }
@@ -74,6 +76,5 @@ void from_json(const nlohmann::json& j, UserPasswords& p) {
 	j.at("site").get_to(p.site);
 	j.at("name").get_to(p.name);
 	j.at("pass").get_to(p.pass);
-	j.at("salt").get_to(p.salt);
 	j.at("nonce").get_to(p.nonce);
 }
