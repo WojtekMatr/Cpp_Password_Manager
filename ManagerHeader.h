@@ -1,8 +1,10 @@
 #pragma once
 #include <string>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <sodium.h>
+unsigned char out_key[crypto_secretbox_KEYBYTES];
 
 struct UserPasswords;
 struct User {
@@ -22,6 +24,47 @@ struct UserPasswords {
 
 };
 
+
+ unsigned char* decrpyt(const std::string&  cryptedPass,const unsigned char nonce[]) {
+	char encoded[2048];
+	size_t cipher_len;
+	unsigned char cipher[1024];
+	unsigned char decrypted[1024];
+
+	sodium_base642bin(cipher, sizeof cipher, cryptedPass.c_str(), cryptedPass.length(), NULL, &cipher_len, NULL, sodium_base64_VARIANT_ORIGINAL);
+	//std::cout << bufor;
+	const unsigned char* data =
+		reinterpret_cast<const unsigned char*>(cryptedPass.c_str());
+
+	crypto_secretbox_open_easy(decrypted,
+		cipher, cipher_len, nonce, out_key);
+
+
+	size_t message_len = cipher_len - crypto_secretbox_MACBYTES;
+	decrypted[message_len] = '\0';
+	std::cout << std::setw(45) << decrypted;
+
+	return decrypted;
+
+};
+#include <cstring>
+
+ void copy(const unsigned char data[], size_t lenght) {
+#ifdef _WIN32
+	 if (!OpenClipboard(NULL)) return;
+	 EmptyClipboard();
+	 HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, lenght + 1);
+	 if (hGlob) {
+		 void* pMem = GlobalLock(hGlob);
+		 memcpy(pMem, data, lenght);
+		 ((char*)pMem)[lenght] = '\0';
+
+		 GlobalUnlock(hGlob);
+		 SetClipboardData(CF_TEXT, hGlob);
+	 }
+	 CloseClipboard();
+#endif
+ }
 
 class JsonPasswords {
 	nlohmann::json* j;
@@ -44,7 +87,7 @@ int count(const std::vector<UserPasswords>& name) {
 
 void to_json(nlohmann::json& j, const User& u) {
 	j = nlohmann::json{
-		{"user",  u.name},
+		{"user", u.name},
 		{"email", u.email},
 		{"code", u.pwhash},
 		{"salt", u.salt},

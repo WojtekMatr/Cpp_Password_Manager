@@ -1,3 +1,9 @@
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <cstdio>
+#endif
 #include "ManagerHeader.h"
 #include <nlohmann/json.hpp>
 #include <sodium.h>
@@ -12,157 +18,170 @@
 #include <algorithm>
 #include <limits>
 #include <cstring>
+
+
 //#include <bcrypt.h>
 
 
+class Sprawdzam {
+	int a;
+	double b;
+	float c;
+	double e;
+public:
+	Sprawdzam() = default;
 
+
+};
 
 int main() {
+	if (sodium_init() < 0) return 1;
+	Sprawdzam* ptr = new Sprawdzam();
 	std::cout << "\aPaswword manager -- Without GUI, next time i'll sit on this and learn Cpp Gui" << std::endl;
 	std::ifstream in("output.json");
 	nlohmann::json j = in ? nlohmann::json::parse(in) : nlohmann::json::array();
 	std::vector<User> users;
 	bool logged = false;
-	unsigned char out_key[crypto_secretbox_KEYBYTES];
+	//unsigned char out_key[crypto_secretbox_KEYBYTES];
 	unsigned char salt[crypto_pwhash_SALTBYTES];
 	unsigned char nonce[crypto_secretbox_NONCEBYTES];
 	auto it = users.begin();
 
 	if (in) {
-		 users = j.get<std::vector<User>>();
+		users = j.get<std::vector<User>>();
 		for (const auto& u : users) {
 			std::cout << u.name << " " << "\n";
 		}
 	}
 	{
 		std::unique_ptr<User> user = std::make_unique<User>();
-		while(1){
+		while (1) {
 			if (logged)
 				break;
-		std::cout << "1. Log in" << std::endl;
-		std::cout << "2. Sign in" << std::endl;
-		std::cout << "3. Password reset" << std::endl;
-		int n;
-		std::cin >> n;
-		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		system("cls");
-		{
-			std::unique_ptr<std::string> pass = std::make_unique<std::string>();
-			switch (n) {
-			case 1: {
+			std::cout << "1. Log in" << std::endl;
+			std::cout << "2. Sign in" << std::endl;
+			std::cout << "3. Password reset" << std::endl;
+			int n;
+			std::cin >> n;
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			system("cls");
+			{
+				std::unique_ptr<std::string> pass = std::make_unique<std::string>();
+				switch (n) {
+				case 1: {
 
-				std::cout << "User name: " << std::endl;
-				std::getline(std::cin, (user->name));
-				std::cout << "Password: " << std::endl;
-				std::getline(std::cin, (*pass));
-				it = std::find_if(users.begin(), users.end(), [&](User a) {
-					return a.name == user->name;
-					});
-				if (it != users.end()) {
-					std::cout << "Find him!" << std::endl;
+					std::cout << "User name: " << std::endl;
+					std::getline(std::cin, (user->name));
+					std::cout << "Password: " << std::endl;
+					std::getline(std::cin, (*pass));
+					it = std::find_if(users.begin(), users.end(), [&](User a) {
+						return a.name == user->name;
+						});
+					if (it != users.end()) {
+						std::cout << "Find him!" << std::endl;
 
-					if (crypto_pwhash_str_verify(
-						(it->pwhash).c_str(),
-						(*pass).c_str(), strlen((*pass).c_str())
-					) == 0) {
-						std::cout << "Good password!" << std::endl;
-						*user = *it;
-						logged = true;
-						crypto_pwhash(
-							out_key, sizeof out_key, (*pass).c_str(), strlen((*pass).c_str()),
-							user->salt, crypto_pwhash_OPSLIMIT_INTERACTIVE,
-							crypto_pwhash_MEMLIMIT_INTERACTIVE,
-							crypto_pwhash_ALG_DEFAULT);
-						
-						std::cout << out_key;
+						if (crypto_pwhash_str_verify(
+							(it->pwhash).c_str(),
+							(*pass).c_str(), strlen((*pass).c_str())
+						) == 0) {
+							std::cout << "Good password!" << std::endl;
+							*user = *it;
+							logged = true;
+							crypto_pwhash(
+								out_key, sizeof out_key, (*pass).c_str(), strlen((*pass).c_str()),
+								user->salt, crypto_pwhash_OPSLIMIT_INTERACTIVE,
+								crypto_pwhash_MEMLIMIT_INTERACTIVE,
+								crypto_pwhash_ALG_DEFAULT);
+
+							std::cout << out_key;
+						}
 					}
+
+					std::cout << std::endl;;
+
+					break;
 				}
+				case 2: {
+					std::random_device rd;
+					std::mt19937 gen(rd());
+					std::uniform_int_distribution<> dist(1, 250000);
+					randombytes_buf(salt, sizeof salt);
+					std::cout << "User name: " << std::endl;
+					std::getline(std::cin, (user->name));
+					it = std::find_if(users.begin(), users.end(), [&](User a) {
+						return a.name == user->name;
+						});
+					if (it != users.end()) {
+						printf("There is User with this name");
+						break;
 
-				std::cout << std::endl;;
+					}
+					std::cout << "Password: " << std::endl;
+					std::getline(std::cin, (*pass));
+					std::cout << "Your email address: " << std::endl;
+					std::getline(std::cin, (user->email));
+					char pwhash[crypto_pwhash_STRBYTES];
 
-				break;
-			}
-			case 2:{
-				std::random_device rd;
-				std::mt19937 gen(rd());
-				std::uniform_int_distribution<> dist(1, 250000);
-				randombytes_buf(salt, sizeof salt);
-				std::cout << "User name: " << std::endl;
-				std::getline(std::cin, (user->name));
-				it = std::find_if(users.begin(), users.end(), [&](User a) {
-					return a.name == user->name;
-					});
-				if (it != users.end()) {
-					printf("There is User with this name");
+					crypto_pwhash_str(
+						pwhash,
+						pass->c_str(),
+						pass->size(),
+						crypto_pwhash_OPSLIMIT_MODERATE,
+						crypto_pwhash_MEMLIMIT_MODERATE
+					);
+
+					//crypto_pwhash(
+
+					//);
+					std::cout << pwhash << std::endl;
+					//memcpy((user->pwhash).c_str(), pwhash, crypto_pwhash_STRBYTES);
+					user->pwhash = pwhash;
+					std::cout << *pass;
+					int ID;
+					while (1) {
+						ID = dist(gen);
+						it = std::find_if(users.begin(), users.end(), [&](User a) {
+							return a.ID == ID;
+							});
+						if (it == users.end()) { break; }
+					}
+					user->ID = ID;
+					j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} ,{"salt", salt}, { "ID", ID } });
+					users.push_back(*user);
+					//crypto_pwhash(out_key,);
+					std::cout << "\n" << std::endl;;
+					break;
+				}
+				case 3:
+					std::cout << "Reseting password!" << std::endl;
+					std::cout << "User name\n";
+					std::getline(std::cin, (user->name));
+					std::cout << "Email\n";
+					std::getline(std::cin, (user->email));
+					it = std::find_if(users.begin(), users.end(), [&](User a) {
+						return a.name == user->name && a.email == user->email;
+						});
+					if (it != users.end()) {
+						printf("In future i will send you email with new password");
+
+
+					}
+					std::cout << std::endl;;
+
+
+
+
 					break;
 
+
+
+
+
 				}
-				std::cout << "Password: " << std::endl;
-				std::getline(std::cin, (*pass));
-				std::cout << "Your email address: " << std::endl;
-				std::getline(std::cin, (user->email));
-				char pwhash[crypto_pwhash_STRBYTES];
-
-				crypto_pwhash_str(
-					pwhash,
-					pass->c_str(),
-					pass->size(),
-					crypto_pwhash_OPSLIMIT_MODERATE,
-					crypto_pwhash_MEMLIMIT_MODERATE
-				);
-
-				//crypto_pwhash(
-
-				//);
-				std::cout << pwhash << std::endl;
-				//memcpy((user->pwhash).c_str(), pwhash, crypto_pwhash_STRBYTES);
-				user->pwhash = pwhash;
-				std::cout << *pass;
-				int ID;
-				while (1) {
-					ID = dist(gen);
-					it = std::find_if(users.begin(), users.end(), [&](User a) {
-						return a.ID == ID;
-						});
-					if (it == users.end()) { break; }
-				}
-				user->ID = ID;
-				j.push_back({ {"user", user->name}, {"code", user->pwhash}, {"email", user->email} ,{"salt", salt}, { "ID", ID }});
-				users.push_back(*user);
-				//crypto_pwhash(out_key,);
-				std::cout << "\n" << std::endl;;
-				break;
 			}
-			case 3:
-				std::cout << "Reseting password!" << std::endl;
-				std::cout << "User name\n";
-				std::getline(std::cin, (user->name));
-				std::cout << "Email\n";
-				std::getline(std::cin, (user->email));
-				 it = std::find_if(users.begin(), users.end(), [&](User a) {
-					return a.name == user->name && a.email == user->email;
-					});
-				if (it != users.end()) {
-					printf("In future i will send you email with new password");
-
-
-				}
-				std::cout << std::endl;;
-
-
-
-
-				break;
-
-
-
-
-
-			}
-		}
 			std::ofstream file("output.json");
 			if (file.is_open()) {
-				file << j.dump(4); 
+				file << j.dump(4);
 				file.close();
 			}
 
@@ -170,23 +189,28 @@ int main() {
 
 		}
 		std::string name = std::to_string(user->ID);
-		std::ifstream in2(name +".json");
+		std::ifstream in2(name + ".json");
 		nlohmann::json pass = in2 ? nlohmann::json::parse(in2) : nlohmann::json::array();
 		std::vector<UserPasswords> passwords;
 		if (in2)
 			passwords = pass.get<std::vector<UserPasswords>>();
 		int sizePass = count(passwords);
+
 		while (1) {
 			std::unique_ptr<UserPasswords> userPass = std::make_unique<UserPasswords>();
 			std::cout << "1. Add password" << std::endl;
 			std::cout << "2. Password list" << std::endl;
 			std::cout << "3. Change password" << std::endl;
 			std::cout << "4. Delete password" << std::endl;
+
 			int n;
+
 			std::cin >> n;
 			std::cout << std::endl;
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			std::string pass1;
+			unsigned char decrypted[1024];
+
 			const char* message;
 
 			switch (n) {
@@ -199,7 +223,7 @@ int main() {
 				std::cout << "a) Write password" << std::endl;
 				std::cout << "b) Generate password (recommended)" << std::endl;
 				char b;
-				
+
 				//std::cin >> b;
 
 				while (1) {
@@ -222,7 +246,6 @@ int main() {
 					}
 					else { std::cout << " You choose wrong, choose between a or b" << std::endl; }
 				}
-				if (sodium_init() < 0) return 1;
 				randombytes_buf(nonce, sizeof nonce);
 				unsigned char ciphertext[1024];
 				size_t msg_len = pass1.size();
@@ -257,73 +280,75 @@ int main() {
 
 				//strcpy(userPass->pass, ciphertext);
 				passwords.push_back(*userPass);
-				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} , {"nonce", nonce}});
+				pass.push_back({ {"site", userPass->site}, {"name", userPass->name}, {"pass", userPass->pass} , {"nonce", nonce} });
 
 				std::cout << "\n";
 				sizePass++;
 				break;
 			}
 			case 2: {
-				int m=-1;
+				int m = -2;
 				while (1) {
 					int countPasswords = 0;
 					for (const auto& i : passwords) {
 						countPasswords++;
 						if (m == 0) {
-							std::cout << std::left << std::setw(15)<< i.name << std::setw(45) << i.pass << std::setw(45) << i.site << std::endl;
+							std::cout << std::left << std::setw(15) << i.name;
+							memcpy(decrypted, decrpyt(i.pass, i.nonce), 1024);
+							std::cout << std::setw(45) << i.site << std::endl;
 						}
 						else {
 							if (m == countPasswords) {
-								std::string uncodedPassword;
-								char encoded[2048];
-								size_t cipher_len;
-								unsigned char cipher[1024];
-								unsigned char decrypted[1024];
-
-								sodium_base642bin(cipher, sizeof cipher, i.pass.c_str(), i.pass.length(), NULL,&cipher_len,NULL, sodium_base64_VARIANT_ORIGINAL);
-								//std::cout << bufor;
-								const unsigned char* data =
-									reinterpret_cast<const unsigned char*>(i.pass.c_str());
-
-								crypto_secretbox_open_easy(decrypted, 
-									cipher,cipher_len, i.nonce, out_key);
-								
-								
-								size_t message_len = cipher_len - crypto_secretbox_MACBYTES;
-								decrypted[message_len] = '\0';
-								std::cout << std::left<< std::setw(15)<<  i.name << std::setw(45) << decrypted << std::setw(45) << i.site << std::endl;
+								std::cout << std::left << std::setw(15) << i.name;
+								pass1 = *decrpyt(i.pass, i.nonce);
+								std::cout << std::setw(45) << i.site << std::endl;
 							}
 							else {
 								std::string hiddenPassword;
 								for (int b = 0; b < sizeof i.pass; b++) {
 									hiddenPassword += '*';
 								}
-								std::cout << std::left << std::setw(15)<< i.name << std::setw(45) << hiddenPassword << std::setw(45) << i.site << std::endl;
-							}
+								std::cout << std::left << std::setw(15) << i.name << std::setw(45) << hiddenPassword << std::setw(45) << i.site << std::endl;
 							}
 						}
+					}
 
-				
 
-					std::cout << "\n\n Ktore haslo chcesz pokazac, napisz numer indeksu:" << std::endl;
-					std::cout << "\n Jesli chcesz pokazac wszystkie (niezalecane) kliknij 0\n" << std::endl;
-						
-					while (1) {
+
+					std::cout << "\n\nKtore haslo chcesz pokazac, napisz numer indeksu:" << std::endl;
+					std::cout << "\nJesli chcesz pokazac wszystkie (niezalecane) kliknij 0\n";
+					std::cout << "Jesli chcesz skopiowac do schowka odkryte POJEDYNCZE haslo wcisnij c\n";
+					std::cout << "Jesli chcesz wrocic kliknij -1" << std::endl;
+
+
+					char tmp;
+					if (m == -1) break;
+
+					std::cin >> tmp;
+					if (tmp == 'c' || tmp == 'C') {
+						copy(decrypted, 1024);
+
+						std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+					}
+					else if (std::isdigit(tmp)) {
+						std::cin.putback(tmp);
 						std::cin >> m;
-						if (m > sizePass || m < 0) {
-							std::cout << "Podano zla liczbe\n";
-						}
-						else {
-							break;
-						}
+						std::cout << std::endl;
+						std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+					}
+					else {
+						std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+						break;
 					}
 
 
 
 
 				}
-					break;
-				
+				break;
+
 			}
 			case 3:
 				printf("1");
@@ -332,24 +357,24 @@ int main() {
 			case 4:
 				printf("1");
 				break;
-			
-			
-			
+
+
+
 			}
-			std::ofstream file(name+".json");
+			std::ofstream file(name + ".json");
 			if (file.is_open()) {
 				file << pass.dump(4);
 				file.close();
 			}
-		
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
 		}
 
 
